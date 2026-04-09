@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Secure Auth Portal</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* ✅ Simple Background */
+body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: #f4f6f9;
+    color: #333;
+}
+
+/* 💎 Card */
+.auth-card {
+    background: #ffffff;
+    padding: 2.5rem;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    transition: 0.3s;
+}
+
+.auth-card:hover {
+    transform: translateY(-3px);
+}
+
+/* Title */
+.auth-card h2 {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.auth-card p {
+    text-align: center;
+    margin-bottom: 25px;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+/* Inputs */
+.input-group {
+    margin-bottom: 1.3rem;
+    position: relative;
+}
+
+.input-group label {
+    font-size: 0.85rem;
+    color: #555;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    outline: none;
+}
+
+.input-group input:focus {
+    border-color: #6c63ff;
+    box-shadow: 0 0 5px rgba(108,99,255,0.3);
+}
+
+/* Hide Name */
+#nameGroup {
+    display: none;
+}
+
+/* Toggle Password */
+.toggle-btn {
+    position: absolute;
+    right: 10px;
+    top: 36px;
+    background: none;
+    border: none;
+    color: #555;
+    cursor: pointer;
+}
+
+/* Forgot Password */
+.forgot {
+    text-align: right;
+    margin-bottom: 15px;
+}
+
+.forgot a {
+    font-size: 0.8rem;
+    color: #6c63ff;
+    text-decoration: none;
+}
+
+.forgot a:hover {
+    text-decoration: underline;
+}
+
+/* Button */
+.submit-btn {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    background: #6c63ff;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.submit-btn:hover {
+    background: #5548d9;
+}
+
+/* Bottom */
+.bottom-text {
+    text-align: center;
+    margin-top: 15px;
+    font-size: 0.85rem;
+}
+
+.bottom-text a {
+    font-weight: 600;
+    cursor: pointer;
+    color: #6c63ff;
+}
+
+/* Footer */
+.footer {
+    margin-top: 20px;
+    font-size: 0.85rem;
+    text-align: center;
+    color: #777;
+}
+</style>
+</head>
+
+<body>
+
+<div class="auth-card">
+    <h2 id="formTitle">Welcome Back</h2>
+    <p id="formSubtitle">Login to continue</p>
+
+    <form id="authForm">
+
+        <div class="input-group" id="nameGroup">
+            <label>Full Name</label>
+            <input type="text" id="fullname">
+        </div>
+
+        <div class="input-group">
+            <label>Email</label>
+            <input type="email" id="email" required>
+        </div>
+
+        <div class="input-group">
+            <label>Password</label>
+            <input type="password" id="password" required>
+            <button type="button" class="toggle-btn" id="togglePassword">Show</button>
+        </div>
+
+        <div class="forgot">
+            <a href="#" onclick="forgotPassword()">Forgot Password?</a>
+        </div>
+
+        <button type="submit" class="submit-btn" id="submitBtn">Sign In</button>
+
+        <p class="bottom-text">
+            <span id="toggleText">New user?</span> 
+            <a id="toggleMode">Create account</a>
+        </p>
+
+    </form>
+</div>
+
+<footer class="footer">
+     Made by Aditya Pratap Singh | Built for learning 📊
+</footer>
+
+<script>
+const form = document.getElementById('authForm');
+const nameGroup = document.getElementById('nameGroup');
+const toggleModeBtn = document.getElementById('toggleMode');
+const formTitle = document.getElementById('formTitle');
+const formSubtitle = document.getElementById('formSubtitle');
+const toggleText = document.getElementById('toggleText');
+const submitBtn = document.getElementById('submitBtn');
+
+let isLoginMode = true;
+
+// Toggle Mode
+toggleModeBtn.onclick = () => {
+    isLoginMode = !isLoginMode;
+
+    if (isLoginMode) {
+        nameGroup.style.display = "none";
+        formTitle.textContent = "Welcome Back";
+        formSubtitle.textContent = "Login to continue";
+        submitBtn.textContent = "Sign In";
+        toggleText.textContent = "New user?";
+        toggleModeBtn.textContent = "Create account";
+    } else {
+        nameGroup.style.display = "block";
+        formTitle.textContent = "Create Account";
+        formSubtitle.textContent = "Join us today";
+        submitBtn.textContent = "Sign Up";
+        toggleText.textContent = "Already registered?";
+        toggleModeBtn.textContent = "Sign In";
+    }
+};
+
+// Toggle Password
+document.getElementById('togglePassword').onclick = function() {
+    const pass = document.getElementById('password');
+    pass.type = pass.type === "password" ? "text" : "password";
+};
+
+// Forgot Password (UI only)
+function forgotPassword() {
+    const email = document.getElementById('email').value;
+
+    if (!email) {
+        alert("Please enter your email first!");
+    } else {
+        alert("Password reset link sent to " + email);
+    }
+}
+
+// API Call
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const endpoint = isLoginMode ? '/login' : '/signup';
+
+    const payload = isLoginMode
+        ? {
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value
+          }
+        : {
+            fullname: document.getElementById('fullname').value,
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value
+          };
+
+    try {
+        const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        alert(data.message);
+
+    } catch {
+        alert("Server error. Check Flask is running.");
+    }
+});
+</script>
+
+</body>
+</html>
