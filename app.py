@@ -1,84 +1,104 @@
-from flask import Flask, request, jsonify, render_template
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-from werkzeug.security import generate_password_hash, check_password_hash
-import jwt
-import datetime
+from flask import Flask, render_template, request, redirect, url_for
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 
 app = Flask(__name__)
 
-# CORS frontend (HTML) aur backend (Python) ko connect karne deta hai
-CORS(app)
+# 🔐 Config
+app.config['SECRET_KEY'] = 'secret123'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Security Key (Token banane ke liye)
-app.config['SECRET_KEY'] = 'super_secret_internship_key'
+db = SQLAlchemy(app)
 
-# Mock Database (Abhi ke liye list use kar rahe hain)
-users = []
+# 🔐 Flask-Login Setup
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'   # ✅ FIX: redirect instead of 401
+
+
+# 👤 User Model
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(200))
+    email = db.Column(db.String(200), unique=True)
+    password = db.Column(db.String(200))
+
+
+# 🔄 Load User
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+
+# 🏠 Home (Protected)
 @app.route('/')
+@login_required
 def home():
+    return render_template('home.html', user=current_user)
+
+
+# 🔐 Login Page (GET)
+@app.route('/login', methods=['GET'])
+def login():
     return render_template('login.html')
 
-# ==========================================
-# SIGN UP API (Naya Account Banane Ke Liye)
-# ==========================================
-@app.route('/signup', methods=['POST'])
-def signup():
-    data = request.get_json()
-    fullname = data.get('fullname')
-    email = data.get('email')
-    password = data.get('password')
 
-    # Check agar user pehle se exist karta hai
-    if any(user['email'] == email for user in users):
-        return jsonify({"message": "User already exists with this email!"}), 400
-
-    # Password encrypt karna
-    hashed_password = generate_password_hash(password)
-    
-    # User save karna
-    new_user = {
-        "id": len(users) + 1,
-        "fullname": fullname,
-        "email": email,
-        "password": hashed_password
-    }
-    users.append(new_user)
-    print("Database Updated -> Users:", users)
-
-    return jsonify({"message": "Account created successfully!"}), 201
-
-# ==========================================
-# LOGIN API (Sign In Karne Ke Liye)
-# ==========================================
+# 🔐 Login Logic (POST)
 @app.route('/login', methods=['POST'])
-def login():
-    data = request.get_json()
-    email = data.get('email')
-    password = data.get('password')
+def login_post():
+    email = request.form['email']
+    password = request.form['password']
 
-    # User dhundna
-    user = next((u for u in users if u['email'] == email), None)
-    
-    # Agar user nahi mila ya password galat hai
-    if not user or not check_password_hash(user['password'], password):
-        return jsonify({"message": "Invalid email or password"}), 400
+    user = User.query.filter_by(email=email).first()
 
-    # Agar password sahi hai, toh 1 ghante ke liye Token generate karo
-    token = jwt.encode({
-        'userId': user['id'],
-        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)
-    }, app.config['SECRET_KEY'], algorithm="HS256")
+    # ✅ Check user + password
+    if user and user.password == password:
+        login_user(user)
+        return redirect(url_for('home'))
+    else:
+        return "Invalid email or password"
 
-    return jsonify({
-        "message": f"Welcome back, {user['fullname']}!",
-        "token": token,
-        "user": {"fullname": user['fullname'], "email": user['email']}
-    }), 200
 
-# ==========================================
-# Server Run Command
-# ==========================================
-if __name__ == '__main__':
-    print("🚀 Flask Backend is running on http://127.0.0.1:5000")
-    app.run(debug=True, port=5000)
+# 📝 Signup Page (GET)
+@app.route('/signup', methods=['GET'])
+def signup():
+    return render_template('signup.html')
+
+
+# 📝 Signup Logic (POST)
+@app.route('/signup', methods=['POST'])
+def signup_post():
+    username = request.form['username']
+    email = request.form['email']
+    password = request.form['password']
+
+    # ❌ Prevent duplicate users
+    user = User.query.filter_by(email=email).first()
+    if user:
+        return "Email already exists"
+
+    new_user = User(username=username, email=email, password=password)
+    db.session.add(new_user)
+    db.session.commit()
+
+    login_user(new_user)  # auto login after signup
+    return redirect(url_for('home'))
+
+
+# 🚪 Logout
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
+
+
+# 🔧 Create DB automatically
+with app.app_context():
+    db.create_all()
+
+
+# ▶️ Run App
+if __name__ == "__main__":
+    app.run(debug=True)
